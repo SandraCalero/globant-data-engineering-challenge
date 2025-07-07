@@ -5,7 +5,7 @@
 FastAPI application to process employee data from CSV files stored in S3 and store them in a database. The application is designed to be deployed on AWS ECS with Fargate.
 
 ## 🏗️ Architecture
-
+```text
 ┌────────────────────────────────────────────────────┐
 │                    End User                        │
 │              (consumes API endpoints)              │
@@ -30,7 +30,7 @@ FastAPI application to process employee data from CSV files stored in S3 and sto
 │   S3 Bucket    │    │      Aurora Database       │
 │  (CSV files)   │    │  (stores loaded data)      │
 └────────────────┘    └────────────────────────────┘
-
+```
 ## 🚀 Current Project Status
 
 ### ✅ Implemented
