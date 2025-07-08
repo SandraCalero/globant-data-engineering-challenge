@@ -2,7 +2,7 @@
 
 ## 📋 Description
 
-FastAPI application to process employee data from CSV files stored in S3 and store them in a database. The application is designed to be deployed on AWS ECS with Fargate.
+FastAPI application to process employee data from CSV files stored in S3 and store them in a database. The application is designed to be deployed on AWS ECS with Fargate, using cloud-native security and deployment best practices.
 
 ## 🏗️ Architecture
 ```text
@@ -14,7 +14,7 @@ FastAPI application to process employee data from CSV files stored in S3 and sto
                  ▼                 │
 ┌────────────────────────────────────────────────────┐
 │         Application Load Balancer (ALB)            │
-│   (exposes public API endpoints)                   │
+│         (exposes public API endpoints)             │
 └────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -31,23 +31,28 @@ FastAPI application to process employee data from CSV files stored in S3 and sto
 │  (CSV files)   │    │  (stores loaded data)      │
 └────────────────┘    └────────────────────────────┘
 ```
+
 ## 🚀 Current Project Status
 
 ### ✅ Implemented
 
 - **FastAPI Application**: REST API with endpoints for departments, jobs and employees
 - **Data Models**: SQLModel for departments, jobs and employees
-- **S3 Connection**: Function to read files from S3 buckets
+- **S3 Connection**: Service class to read files from S3 buckets
+- **Database Connection**: Aurora PostgreSQL with health check
+- **Health Checks**: Endpoints for S3 and database connectivity
 - **Docker**: Container with FastAPI and hot-reload
 - **Docker Compose**: Configuration for local development
 - **Makefile**: Simplified commands for development and deployment
 - **Logging**: Detailed logging system for debugging
 - **Error Handling**: Robust error handling for AWS and S3
+- **Security**: Uses IAM Task Role for S3 access and AWS Secrets Manager for database URL in production
 
 ### 🔧 Available Endpoints
 
 - `GET /` - Root endpoint
-- `GET /test-s3` - Test S3 connection and file reading
+- `GET /health-db` - Health check for database connection
+- `GET /health-s3` - Health check for S3 connection and file listing
 - `POST /departments` - Create department
 - `GET /departments` - List departments
 - `POST /jobs` - Create job
@@ -61,13 +66,13 @@ globant-data-engineering-challenge/
 │   ├── __init__.py
 │   ├── main.py          # FastAPI application
 │   ├── models.py        # SQLModel models
-│   ├── db.py           # Database configuration
-│   └── s3_utils.py     # S3 utilities
+│   ├── db.py            # Database configuration
+│   ├── services.py      # Reusable service classes (S3, DB)
 ├── docker-compose.yml   # Docker Compose configuration
-├── Dockerfile          # Docker image definition
-├── Makefile           # Development commands
-├── requirements.txt   # Python dependencies
-└── README.md         # This file
+├── Dockerfile           # Docker image definition
+├── Makefile             # Development commands
+├── requirements.txt     # Python dependencies
+└── README.md            # This file
 ```
 
 ## 🛠️ Technologies Used
@@ -78,14 +83,17 @@ globant-data-engineering-challenge/
 - **Docker**: Containers
 - **Docker Compose**: Container orchestration
 - **AWS S3**: File storage
-- **AWS ECR**: Container registry (ready)
+- **AWS ECR**: Container registry
+- **AWS ECS/Fargate**: Serverless container orchestration
+- **AWS Secrets Manager**: Secure storage for secrets (e.g., DATABASE_URL)
+- **IAM Task Role**: Secure access to AWS resources from ECS
 
 ## 🚀 Installation and Usage
 
 ### Prerequisites
 
 - Docker and Docker Compose
-- AWS CLI configured with credentials
+- AWS CLI configured with credentials (for local dev)
 - Python 3.12+ (for local development)
 
 ### Local Development
@@ -96,7 +104,7 @@ globant-data-engineering-challenge/
    cd globant-data-engineering-challenge
    ```
 
-2. **Configure AWS credentials**
+2. **Configure AWS credentials (for local dev only)**
    ```bash
    aws configure
    ```
@@ -127,7 +135,9 @@ make clean     # Clean containers
 
 ### Environment Variables
 
-The application uses AWS CLI credentials automatically. If you need to use environment variables:
+#### Local Development
+
+The application uses AWS CLI credentials automatically for local development. If you need to use environment variables:
 
 ```bash
 export AWS_ACCESS_KEY_ID=your_access_key
@@ -135,11 +145,24 @@ export AWS_SECRET_ACCESS_KEY=your_secret_key
 export AWS_DEFAULT_REGION=us-east-1
 ```
 
+#### Production (ECS/Fargate)
+- **You do not need to define AWS keys in environment variables.**
+- Access to S3 and other services is managed through the **IAM Task Role** associated with the task.
+- The variable `DATABASE_URL` is securely injected from **AWS Secrets Manager** using the `ValueFrom` option in the Task Definition.
+
+
 ## 🔍 Testing
 
-### Test S3 connection
+> **Note:** To test the database health check endpoint locally, you need to have a local database running. The Aurora database in AWS (Serverless v2) cannot be accessed from your local environment because it does not expose a public endpoint.
+
+### Test S3 health check
 ```bash
-curl "http://localhost:8000/test-s3?bucket_name=your-bucket"
+curl "http://localhost:8000/health-s3"
+```
+
+### Test database health check
+```bash
+curl "http://localhost:8000/health-db"
 ```
 
 ### Test root endpoint
@@ -150,11 +173,9 @@ curl "http://localhost:8000/"
 ## 📝 Next Steps
 
 - [ ] Implement CSV file processing
-- [ ] Connect to Aurora database
-- [ ] Implement data validation
 - [ ] Add unit tests
 - [ ] Configure CI/CD pipeline
-- [ ] Deploy to AWS ECS
+- [ ] Deploy to AWS ECS (production ready)
 
 ## 🤝 Contributing
 
