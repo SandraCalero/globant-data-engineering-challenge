@@ -1,15 +1,13 @@
-from sqlmodel import Session, create_engine, SQLModel
+from sqlmodel import Session, create_engine
 from typing import Annotated
 from fastapi import Depends
+import os
 
-sqlite_name = "db.sqlite3"
-sqlite_url = f"sqlite:///{sqlite_name}"
-
-engine = create_engine(sqlite_url)
+# Use the database URL from the environment variable
+engine = create_engine(os.getenv("DATABASE_URL"))
 
 def get_session():
     with Session(engine) as session:
         yield session
-
 
 SessionDep = Annotated[Session, Depends(get_session)]

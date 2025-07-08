@@ -4,7 +4,7 @@ APP_VERSION = 1.0
 TAG = latest
 
 # AWS ECR configuration (optional - for ECR deployment)
-AWS_ECR_ACCOUNT_ID = 123456
+AWS_ECR_ACCOUNT_ID = 362395301145
 AWS_ECR_REGION = us-east-1
 AWS_ECR_REPO = $(APP_NAME)
 
@@ -68,7 +68,6 @@ docker/build:
 # Push to ECR (requires AWS configuration)
 docker/push: docker/build
 	aws ecr get-login-password --region $(AWS_ECR_REGION) | docker login --username AWS --password-stdin $(AWS_ECR_ACCOUNT_ID).dkr.ecr.$(AWS_ECR_REGION).amazonaws.com
-	aws ecr create-repository --repository-name $(AWS_ECR_REPO) || true
 	docker tag $(APP_NAME):$(APP_VERSION) $(AWS_ECR_ACCOUNT_ID).dkr.ecr.$(AWS_ECR_REGION).amazonaws.com/$(AWS_ECR_REPO):$(TAG)
 	docker push $(AWS_ECR_ACCOUNT_ID).dkr.ecr.$(AWS_ECR_REGION).amazonaws.com/$(AWS_ECR_REPO):$(TAG)
 
