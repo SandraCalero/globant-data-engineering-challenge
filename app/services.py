@@ -1,75 +1,128 @@
 import boto3
 import logging
-import os
-from typing import List
-from botocore.exceptions import NoCredentialsError, ClientError
-from sqlmodel import select
+from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
+
 class S3Service:
     @staticmethod
-    def read_s3_files(bucket_name: str, prefix: str = "") -> List[dict]:
-        """Reads files from an S3 bucket and returns a list with content"""
-        logger.info(f"Starting file reading from bucket: {bucket_name}, prefix: {prefix}")
-        
-        try:
-            # Try to use AWS CLI credentials
-            s3 = boto3.client('s3')
-            logger.info("S3 client created successfully")
-            
-            # List objects
-            logger.info("Listing objects in S3...")
-            response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-            files_data = []
-            
-            if 'Contents' in response:
-                logger.info(f"Found {len(response['Contents'])} files to process")
-                for obj in response['Contents']:
-                    key = obj['Key']
-                    size = obj['Size']
-                    logger.info(f"Processing file: {key} (size: {size} bytes)")
-                    
-                    # Read file content
-                    file_obj = s3.get_object(Bucket=bucket_name, Key=key)
-                    content = file_obj['Body'].read().decode('utf-8')
-                    logger.info(f"File {key} read successfully, content: {len(content)} characters")
-                    
-                    files_data.append({
-                        'key': key,
-                        'content': content,
-                        'size': size
-                    })
-            else:
-                logger.warning(f"No files found in bucket {bucket_name} with prefix {prefix}")
-            
-            logger.info(f"Processing completed. Total files processed: {len(files_data)}")
-            return files_data
-            
-        except NoCredentialsError:
-            error_msg = """
-            AWS credentials not found. 
-            
-            Solutions:
-            1. Verify AWS CLI is configured: aws configure list
-            2. Configure credentials: aws configure
-            3. Or use environment variables: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-            """
-            logger.error(error_msg)
-            raise Exception(error_msg)
-            
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'NoSuchBucket':
-                raise Exception(f"Bucket '{bucket_name}' does not exist or you don't have permissions to access it.")
-            elif error_code == 'AccessDenied':
-                raise Exception(f"Access denied to bucket '{bucket_name}'. Verify your permissions.")
-            else:
-                raise Exception(f"AWS Error: {error_code} - {e.response['Error']['Message']}")
-                
-        except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}")
-            raise Exception(f"Unexpected error: {str(e)}")
+    def list_csv_files(bucket_name: str) -> List[str]:
+        """List all CSV files in the given S3 bucket."""
+        logger.info(f"Listing CSV files in bucket: {bucket_name}")
+        s3 = boto3.client('s3')
+        response = s3.list_objects_v2(Bucket=bucket_name)
+        files = []
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                key = obj['Key']
+                if key.endswith('.csv'):
+                    files.append(key)
+        logger.info(f"Found {len(files)} CSV files in bucket '{bucket_name}'")
+        return files
+
+    @staticmethod
+    def read_csv_file(bucket_name: str, key: str) -> List[List[str]]:
+        """Read a CSV file from S3 and return a list of rows (each row is a list of strings)."""
+        logger.info(f"Reading CSV file from bucket: {bucket_name}, key: {key}")
+        s3 = boto3.client('s3')
+        file_obj = s3.get_object(Bucket=bucket_name, Key=key)
+        content = file_obj['Body'].read().decode('utf-8')
+        # Split into rows and columns (no header)
+        rows = [line.strip().split(',')
+                for line in content.strip().splitlines() if line.strip()]
+        logger.info(
+            f"Read {len(rows)} rows from file '{key}' in bucket '{bucket_name}'")
+        return rows
+
 
 class DatabaseService:
-    pass
+    @staticmethod
+    def batch_upsert(table_name: str, bucket_name: str, csv_filename: str, session, model_class, batch_size: int = 1000) -> Dict[str, Any]:
+        """
+        Insert or update rows in batches. If id exists, update; else insert. Returns a summary.
+        """
+        files = S3Service.list_csv_files(bucket_name)
+        if csv_filename not in files:
+            error_msg = f"{csv_filename} not found in S3 bucket"
+            logger.error(error_msg)
+            return {
+                "table": table_name,
+                "error": error_msg,
+                "total": 0,
+                "inserted": 0,
+                "updated": 0,
+                "failed": 0,
+                "errors": []
+            }
+
+        rows = S3Service.read_csv_file(bucket_name, csv_filename)
+
+        logger.info(
+            f"Starting batch upsert for table '{table_name}' with {len(rows)} rows (batch size: {batch_size})")
+
+        total = len(rows)
+        inserted = 0
+        updated = 0
+        failed = 0
+        errors = []
+
+        for batch_start in range(0, total, batch_size):
+            batch = rows[batch_start:batch_start+batch_size]
+            logger.info(
+                f"Processing batch {batch_start//batch_size + 1}: {len(batch)} rows")
+
+            # Process entire batch in a single transaction
+            try:
+                batch_inserted = 0
+                batch_updated = 0
+
+                for row in batch:
+                    try:
+                        # Build dict from model fields and row values
+                        field_names = list(model_class.model_fields.keys())
+                        # Validate data using the model class
+                        validated_data = model_class.model_validate(
+                            dict(zip(field_names, row)))
+                        # Check if id exists
+                        obj = session.get(model_class, validated_data.id)
+                        if obj:
+                            validated_dict = validated_data.model_dump(
+                                exclude_unset=True, exclude={'id'})
+                            obj.sqlmodel_update(validated_dict)
+                            session.add(obj)
+                            batch_updated += 1
+                        else:
+                            session.add(validated_data)
+                            batch_inserted += 1
+                    except Exception as e:
+                        failed += 1
+                        errors.append({"row": row, "error": str(e)})
+
+                # Commit the entire batch
+                session.commit()
+                inserted += batch_inserted
+                updated += batch_updated
+                logger.info(
+                    f"Batch {batch_start//batch_size + 1} committed: {batch_inserted} inserted, {batch_updated} updated")
+
+            except Exception as e:
+                # Rollback the entire batch if there's an error
+                session.rollback()
+                logger.error(
+                    f"Batch {batch_start//batch_size + 1} failed and rolled back: {e}")
+                # Count all rows in this batch as failed
+                failed += len(batch)
+                for row in batch:
+                    errors.append({"row": row, "error": f"Batch failed: {e}"})
+
+        logger.info(
+            f"Batch upsert completed for table '{table_name}'. Inserted: {inserted}, Updated: {updated}, Failed: {failed}")
+        return {
+            "table": table_name,
+            "total": total,
+            "inserted": inserted,
+            "updated": updated,
+            "failed": failed,
+            "errors": errors
+        }

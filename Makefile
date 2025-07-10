@@ -12,17 +12,23 @@ AWS_ECR_REPO = $(APP_NAME)
 HOST_PORT = 8000
 CONTAINER_PORT = 8000
 
-.PHONY : help build run stop logs test clean docker/build docker/push docker/run docker/test
+.PHONY : help build run run-local stop logs test test-batch clean docker/build docker/push docker/run docker/test
 
 # Default command - show help
 help:
 	@echo "Available commands:"
-	@echo "  make build     - Build Docker image"
-	@echo "  make run       - Run application with docker-compose"
-	@echo "  make stop      - Stop application"
-	@echo "  make logs      - View application logs"
-	@echo "  make test      - Test S3 endpoint"
-	@echo "  make clean     - Clean containers and images"
+	@echo "  make build       - Build Docker image"
+	@echo "  make run         - Run application with docker-compose (development)"
+	@echo "  make run-local   - Run application locally (without Docker)"
+	@echo "  make stop        - Stop application"
+	@echo "  make logs        - View application logs"
+	@echo "  make test-db     - Test db endpoint"
+	@echo "  make test-s3     - Test S3 endpoint"
+	@echo "  make test-batch  - Test all batch endpoints"
+	@echo "  make test-dept   - Test departments batch endpoint"
+	@echo "  make test-emp    - Test employees batch endpoint"
+	@echo "  make test-jobs   - Test jobs batch endpoint"
+	@echo "  make clean       - Clean containers and images"
 	@echo "  make docker/build - Build Docker image manually"
 	@echo "  make docker/push  - Push image to ECR (requires AWS configuration)"
 
@@ -30,31 +36,70 @@ help:
 build:
 	docker-compose build
 
-# Run application
+# Run application (development)
 run:
-	docker-compose up -d
+	docker-compose -f docker-compose.yml -f docker-compose.local.yml up -d
 
 # Run application in development mode (with logs)
 run-dev:
-	docker-compose up
+	docker-compose -f docker-compose.yml -f docker-compose.local.yml up
+
+# Run application locally (without Docker)
+run-local:
+	@echo "Starting application locally..."
+	@python -m uvicorn app.main:app --host 0.0.0.0 --port $(HOST_PORT) --reload
 
 # Stop application
 stop:
-	docker-compose down
+	docker-compose -f docker-compose.yml -f docker-compose.local.yml down
 
 # View logs
 logs:
 	docker-compose logs -f
 
+# Test db endpoint
+test-db:
+	@echo "Testing db endpoint..."
+	@curl -s "http://localhost:$(HOST_PORT)/health-db" | jq . || echo "Error: Make sure the application is running and jq is installed"
+
 # Test S3 endpoint
-test:
+test-s3:
 	@echo "Testing S3 endpoint..."
-	@curl -s "http://localhost:$(HOST_PORT)/test-s3?bucket_name=globant-data-engineering-challenge" | jq . || echo "Error: Make sure the application is running and jq is installed"
+	@curl -s "http://localhost:$(HOST_PORT)/health-s3" | jq . || echo "Error: Make sure the application is running and jq is installed"
 
 # Test root endpoint
 test-root:
 	@echo "Testing root endpoint..."
-	@curl -s "http://localhost:$(HOST_PORT)/" | jq . || echo "Error: Make sure the application is running"
+	@curl -s "http://localhost:$(HOST_PORT)/" | jq . || echo "Error: Make sure the application is running and jq is installed"
+
+# Test all batch endpoints
+test-batch: test-dept test-emp test-jobs
+	@echo "All batch endpoints tested!"
+
+# Test departments batch endpoint
+test-dept:
+	@echo "Testing departments batch endpoint..."
+	@curl -s -X POST "http://localhost:$(HOST_PORT)/departments/batch" | jq . || echo "Error: Make sure the application is running and jq is installed"
+
+# Test employees batch endpoint
+test-emp:
+	@echo "Testing employees batch endpoint..."
+	@curl -s -X POST "http://localhost:$(HOST_PORT)/employees/batch" | jq . || echo "Error: Make sure the application is running and jq is installed"
+
+# Test jobs batch endpoint
+test-jobs:
+	@echo "Testing jobs batch endpoint..."
+	@curl -s -X POST "http://localhost:$(HOST_PORT)/jobs/batch" | jq . || echo "Error: Make sure the application is running and jq is installed"
+
+# Test GET endpoints
+test-get:
+	@echo "Testing GET endpoints..."
+	@echo "Departments:"
+	@curl -s "http://localhost:$(HOST_PORT)/departments" | jq . || echo "Error"
+	@echo "Employees:"
+	@curl -s "http://localhost:$(HOST_PORT)/employees" | jq . || echo "Error"
+	@echo "Jobs:"
+	@curl -s "http://localhost:$(HOST_PORT)/jobs" | jq . || echo "Error"
 
 # Clean containers and images
 clean:
