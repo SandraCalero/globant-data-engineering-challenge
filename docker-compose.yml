@@ -1,10 +1,5 @@
 services:
   fastapi:
-    build:  .
-    env_file:
-      - .env
+    build: .
     ports:
       - "8000:8000"
-    volumes:
-      - ./app:/app/app
-      - ~/.aws:/root/.aws:ro
