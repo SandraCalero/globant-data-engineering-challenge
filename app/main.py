@@ -1,18 +1,17 @@
-from app.routers import departments, employees, health_checks, jobs
+from .routers import departments, health_checks
+from .routers import departments, employees, health_checks, jobs, all_tables
 from fastapi import FastAPI
 import os
 
-from .routers import departments, health_checks
 
 # Create FastAPI app
-app = FastAPI(title="Globant Data Engineering API",
-              description="REST API for CSV data migration and batch processing on AWS",
-              version="1.0.0")
+app = FastAPI()
 
 app.include_router(health_checks.router)
 app.include_router(departments.router)
 app.include_router(jobs.router)
 app.include_router(employees.router)
+app.include_router(all_tables.router)
 
 
 @app.get("/")
@@ -26,6 +25,7 @@ async def root():
                 "health_s3_check": "/health-s3",
                 "departments": "/departments",
                 "jobs": "/jobs",
-                "employees": "/employees"
+                "employees": "/employees",
+                "all_tables": "/all-tables"
             }
             }

@@ -1,6 +1,6 @@
-from sqlmodel import Session, create_engine
+from sqlmodel import SQLModel, Session, create_engine
 from typing import Annotated
-from fastapi import Depends
+from fastapi import FastAPI, Depends
 import os
 
 # Use the database URL from the environment variable

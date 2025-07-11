@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 
 
 class DepartmentBase(SQLModel):
@@ -15,7 +15,7 @@ class DepartmentCreate(DepartmentBase):
 
 class Department(DepartmentBase, table=True):
     """Model for Department entity"""
-    pass
+    employees: list["Employee"] = Relationship(back_populates="department")
 
 
 class JobBase(SQLModel):
@@ -31,16 +31,17 @@ class JobCreate(JobBase):
 
 class Job(JobBase, table=True):
     """Model for Job entity"""
-    pass
+    employees: list["Employee"] = Relationship(back_populates="job")
 
 
 class EmployeeBase(SQLModel):
     """Base model for Employee entity"""
     id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(default=None)
-    hire_date: datetime = Field(default=None)
-    department_id: int = Field(default=None, foreign_key="department.id")
-    job_id: int = Field(default=None, foreign_key="job.id")
+    name: str | None = Field(default=None)
+    hire_date: datetime | None = Field(default=None)
+    department_id: int | None = Field(
+        default=None, foreign_key="department.id")
+    job_id: int | None = Field(default=None, foreign_key="job.id")
 
 
 class EmployeeCrate(EmployeeBase):
@@ -50,7 +51,8 @@ class EmployeeCrate(EmployeeBase):
 
 class Employee(EmployeeBase, table=True):
     """Model for Employee entity"""
-    pass
+    department: Department = Relationship(back_populates="employees")
+    job: Job = Relationship(back_populates="employees")
 
 
 class HealthResponse(SQLModel):
@@ -64,3 +66,13 @@ class S3HealthResponse(SQLModel):
     files_count: int | None = None
     files: list[dict] | None = None
     error: str | None = None
+
+
+class BatchResponse(SQLModel):
+    table: str
+    total: int
+    inserted: int
+    updated: int
+    failed: int
+    errors:  list[dict] = []
+    file_not_found: bool | None = None
