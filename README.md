@@ -5,31 +5,56 @@
 FastAPI application to process employee data from CSV files stored in S3 and store them in a database. The application is designed to be deployed on AWS ECS with Fargate, using cloud-native security and deployment best practices.
 
 ## 🏗️ Architecture
-```text
-┌────────────────────────────────────────────────────┐
-│                    End User                        │
-│              (consumes API endpoints)              │
-└────────────────────────────────────────────────────┘
-                 │                 ▲
-                 ▼                 │
-┌────────────────────────────────────────────────────┐
-│         Application Load Balancer (ALB)            │
-│         (exposes public API endpoints)             │
-└────────────────────────────────────────────────────┘
-                 │
-                 ▼
-┌────────────────────────────────────────────────────┐
-│             ECS Cluster (Fargate)                  │
-│     (runs FastAPI container)                       │
-│      - Task Definition (Docker image)              │
-│      - Auto scaling                                │
-└────────────────────────────────────────────────────┘
-      │                      │
-      ▼                      ▼
-┌────────────────┐    ┌────────────────────────────┐
-│   S3 Bucket    │    │      Aurora Database       │
-│  (CSV files)   │    │  (stores loaded data)      │
-└────────────────┘    └────────────────────────────┘
+
+```mermaid
+flowchart TD
+    A[End User - consumes API endpoints]
+    B[Application Load Balancer - exposes public API endpoints]
+    C[ECS Cluster - Fargate - runs FastAPI container]
+    D[S3 Bucket - stores CSV files]
+    E[Aurora Database - stores loaded data]
+
+    A --> B
+    B --> C
+    C --> D
+    C --> E
+    B --> A
+```
+
+## 🔄 ETL Process Diagram
+
+```mermaid
+flowchart LR
+    A[S3 Bucket<br>CSV Files: departments.csv, jobs.csv, hired_employees.csv] --> B[FastAPI ETL Endpoints<br> /departments/batch, /jobs/batch, /employees/batch]
+    B --> C[Service Layer<br> S3Service + DatabaseService]
+    C --> D[Data Validation + Transformation]
+    D --> E[Aurora Database<br>Upsert into tables: department, job, employee]
+```
+   
+## 🗃️ Entity-Relationship Diagram
+
+```mermaid
+erDiagram
+    DEPARTMENT ||--o{ EMPLOYEE : has
+    JOB ||--o{ EMPLOYEE : has
+
+    DEPARTMENT {
+        int id PK
+        string department
+    }
+
+    JOB {
+        int id PK
+        string job
+    }
+
+    EMPLOYEE {
+        int id PK
+        string name
+        timestamp hire_date
+        int department_id FK
+        int job_id FK
+    }
 ```
 
 ## 🚀 Features
@@ -44,6 +69,11 @@ FastAPI application to process employee data from CSV files stored in S3 and sto
 - **Docker Compose**: Configuration for local development with PostgreSQL
 - **Makefile**: Simplified commands for development and deployment
 - **Security**: Uses IAM Task Role for S3 access and AWS Secrets Manager for database URL
+- **Database Migrations**: Alembic integration for automated database schema management
+- **Automated Setup**: Entrypoint script for automatic migration application on container startup
+- **Pagination**: GET endpoints support pagination for better performance and user experience
+- **Batch All Tables**: Endpoint to process all CSV files simultaneously
+- **Scalable S3 Structure**: CSV files organized in folders by model class for better scalability
 
 ### 🔧 Available Endpoints
 
@@ -56,11 +86,12 @@ FastAPI application to process employee data from CSV files stored in S3 and sto
 - `POST /departments/batch` - Process departments from CSV file (departments.csv)
 - `POST /jobs/batch` - Process jobs from CSV file (jobs.csv)
 - `POST /employees/batch` - Process employees from CSV file (hired_employees.csv)
+- `POST /all-tables/batch` - Process all CSV files simultaneously
 
 #### Data Retrieval
-- `GET /departments` - List all departments
-- `GET /jobs` - List all jobs
-- `GET /employees` - List all employees
+- `GET /departments` - List all departments (with pagination)
+- `GET /jobs` - List all jobs (with pagination)
+- `GET /employees` - List all employees (with pagination)
 
 ## 🛠️ Technologies Used
 
@@ -72,14 +103,13 @@ FastAPI application to process employee data from CSV files stored in S3 and sto
 - **AWS S3**: File storage
 - **AWS ECR**: Container registry
 - **AWS ECS/Fargate**: Serverless container orchestration
+- **Alembic**: Database migration management
 
-## 🚀 Installation and Usage
+## 🚀 Quick Start
 
 ### Prerequisites
 - Docker and Docker Compose
 - AWS CLI configured with credentials (for local dev)
-- Python 3.12+ (for local development)
-- jq (optional, for JSON formatting in tests)
 
 ### Local Development
 
@@ -87,68 +117,52 @@ FastAPI application to process employee data from CSV files stored in S3 and sto
    ```bash
    git clone <repository-url>
    cd globant-data-engineering-challenge
-   aws configure  # Configure AWS credentials
+   aws configure
    ```
 
-2. **Run the application**
+2. **Create environment file**
+   ```bash
+   cp env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. **Run the application**
    ```bash
    make run
    ```
 
-### Makefile Commands
+4. **Test the API**
+   ```bash
+   curl http://localhost:8000/
+   curl http://localhost:8000/health-db
+   ```
 
+### Quick Commands
 ```bash
-make help         # View all commands
-make build        # Build Docker image
-make run          # Run application (development)
-make run-dev      # Run with visible logs
-make run-local    # Run locally without Docker
+make run          # Start application
 make stop         # Stop application
 make logs         # View logs
-make test-s3      # Test S3 endpoint
-make test-db      # Test database endpoint
-make test-batch   # Test all batch endpoints
-make test-dept    # Test departments batch endpoint
-make test-emp     # Test employees batch endpoint
-make test-jobs    # Test jobs batch endpoint
-make test-get     # Test GET endpoints
-make clean        # Clean containers
+make test-batch   # Test all endpoints
 ```
 
-### Environment Variables
-
-#### Local Development
-```bash
-export AWS_ACCESS_KEY_ID=your_access_key
-export AWS_SECRET_ACCESS_KEY=your_secret_key
-export AWS_DEFAULT_REGION=us-east-1
-export S3_BUCKET_NAME=your-bucket-name
-```
-
-#### Production (ECS/Fargate)
-- Access to S3 and other services is managed through the **IAM Task Role**
-- `DATABASE_URL` is securely injected from **AWS Secrets Manager**
+### Documentation
+- 📖 [Installation Guide](docs/INSTALLATION.md) - Detailed setup instructions
+- 🔧 [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- 📚 [API Documentation](docs/API.md) - Complete API reference
 
 ## 🔍 Testing
 
-### Test batch endpoints
+Quick test commands:
 ```bash
-# Process departments
+# Test all endpoints
+make test-batch
+
+# Test individual endpoints
 curl -X POST "http://localhost:8000/departments/batch"
-
-# Process employees
-curl -X POST "http://localhost:8000/employees/batch"
-
-# Process jobs
-curl -X POST "http://localhost:8000/jobs/batch"
+curl "http://localhost:8000/departments?page=1&size=10"
 ```
 
-### Test GET endpoints
-```bash
-curl "http://localhost:8000/departments"
-curl "http://localhost:8000/employees"
-curl "http://localhost:8000/jobs"
-```
+📚 See [API Documentation](docs/API.md) for complete testing examples.
 
 ## 📊 Batch Processing Features
 
@@ -158,12 +172,26 @@ curl "http://localhost:8000/jobs"
 - **Upsert Logic**: Insert new records or update existing ones
 - **Data Validation**: Automatic validation using SQLModel
 - **Performance Optimizations**: Efficient queries and memory management
+- **Scalable S3 Structure**: CSV files organized in folders by model class (departments/, jobs/, employees/)
+- **Batch All Tables**: Process all CSV files simultaneously with single endpoint
+- **Pagination Support**: GET endpoints support pagination for better performance
+
+## 🗄️ Database Migrations
+
+- **Alembic Integration**: Automated database schema management
+- **Automatic Migrations**: Migrations applied automatically on container startup
+- **SQLModel Support**: Full integration with SQLModel for type-safe migrations
+- **Production Ready**: Works seamlessly in both development and production environments
+- **Zero Downtime**: Safe for production deployments with automatic rollback support
 
 ## 📝 Next Steps
 
-- [ ] Add unit tests
+- [ ] Add HTTP validations for request/response models
+- [ ] Implement metrics endpoints for data analytics
+- [ ] Add middleware for logging, authentication, and error handling
+- [ ] Add comprehensive unit tests
+- [ ] Add data validation rules and custom validators
 - [ ] Configure CI/CD pipeline
-- [ ] Add data validation rules
 
 ## 🤝 Contributing
 

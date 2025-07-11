@@ -76,6 +76,11 @@ test-root:
 test-batch: test-dept test-emp test-jobs
 	@echo "All batch endpoints tested!"
 
+# Test all tables batch endpoint
+test-all-tables:
+	@echo "Testing all tables batch endpoint..."
+	@curl -s -X POST "http://localhost:$(HOST_PORT)/all-tables/batch" | jq . || echo "Error: Make sure the application is running and jq is installed"
+
 # Test departments batch endpoint
 test-dept:
 	@echo "Testing departments batch endpoint..."
