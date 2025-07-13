@@ -83,6 +83,14 @@ lsof -i :5432
 - **Cause**: Missing `import sqlmodel` in migration files
 - **Solution**: Add `import sqlmodel` to the top of migration files
 
+### "AttributeError: 'str' object has no attribute 'columns'"
+- **Cause**: Using string instead of Table object with sqlalchemy-views
+- **Solution**: Use `Table('view_name', MetaData())` objects with CreateView
+
+### "Can't locate revision identified by 'create_views'"
+- **Cause**: Inconsistent migration state in database
+- **Solution**: Check `alembic_version` table and update to correct revision
+
 ### "pg_isready: command not found"
 - **Cause**: PostgreSQL client not installed in container
 - **Solution**: Ensure Dockerfile includes `postgresql-client` installation
@@ -93,6 +101,8 @@ lsof -i :5432
 - Check if indexes are created properly
 - Verify database connection pooling
 - Monitor query execution plans
+- Verify database views are created correctly
+- Check view definitions with `\dv` command
 
 ### Memory issues
 - Increase Docker memory limits
@@ -109,4 +119,16 @@ lsof -i :5432
 ### S3 connectivity issues
 - Verify AWS credentials are configured
 - Check IAM permissions for S3 access
-- Ensure network allows outbound HTTPS connections 
+- Ensure network allows outbound HTTPS connections
+
+### Database views not working
+```bash
+# Check if views exist
+docker-compose -f docker-compose.yml -f docker-compose.local.yml exec fastapi psql -h db -U myuser -d mydatabase -c "\dv"
+
+# Test view data
+docker-compose -f docker-compose.yml -f docker-compose.local.yml exec fastapi psql -h db -U myuser -d mydatabase -c "SELECT * FROM vhiredbyquarter2021 LIMIT 5;"
+
+# Check migration status
+docker-compose -f docker-compose.yml -f docker-compose.local.yml exec fastapi alembic current
+``` 

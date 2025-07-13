@@ -28,6 +28,7 @@ help:
 	@echo "  make test-dept   - Test departments batch endpoint"
 	@echo "  make test-emp    - Test employees batch endpoint"
 	@echo "  make test-jobs   - Test jobs batch endpoint"
+	@echo "  make test-metrics - Test metrics endpoints"
 	@echo "  make clean       - Clean containers and images"
 	@echo "  make docker/build - Build Docker image manually"
 	@echo "  make docker/push  - Push image to ECR (requires AWS configuration)"
@@ -105,6 +106,14 @@ test-get:
 	@curl -s "http://localhost:$(HOST_PORT)/employees" | jq . || echo "Error"
 	@echo "Jobs:"
 	@curl -s "http://localhost:$(HOST_PORT)/jobs" | jq . || echo "Error"
+
+# Test metrics endpoints
+test-metrics:
+	@echo "Testing metrics endpoints..."
+	@echo "Hired by Quarter 2021:"
+	@curl -s "http://localhost:$(HOST_PORT)/metrics/hired-by-quarter-2021?page=1&limit=3" | jq . || echo "Error"
+	@echo "Top Hiring Departments:"
+	@curl -s "http://localhost:$(HOST_PORT)/metrics/top-hiring-departments?page=1&limit=3" | jq . || echo "Error"
 
 # Clean containers and images
 clean:

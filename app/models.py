@@ -76,3 +76,21 @@ class BatchResponse(SQLModel):
     failed: int
     errors:  list[dict] = []
     file_not_found: bool | None = None
+
+
+# View Models for Metrics
+class VHiredByQuarter2021(SQLModel, table=True):
+    """Model for VHiredByQuarter2021 view"""
+    department: str = Field(default=None, primary_key=True)
+    job: str = Field(default=None, primary_key=True)
+    q1: int = Field(default=None)
+    q2: int = Field(default=None)
+    q3: int = Field(default=None)
+    q4: int = Field(default=None)
+
+
+class VTopHiringDepartments(SQLModel, table=True):
+    """Model for VTopHiringDepartments view"""
+    id: int = Field(primary_key=True)
+    department: str = Field(default=None)
+    employees_hired: int = Field(default=None)
