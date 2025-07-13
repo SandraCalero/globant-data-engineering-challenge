@@ -1,5 +1,5 @@
 from .routers import departments, health_checks
-from .routers import departments, employees, health_checks, jobs, all_tables
+from .routers import departments, employees, health_checks, jobs, all_tables, metrics
 from fastapi import FastAPI
 import os
 
@@ -12,6 +12,7 @@ app.include_router(departments.router)
 app.include_router(jobs.router)
 app.include_router(employees.router)
 app.include_router(all_tables.router)
+app.include_router(metrics.router)
 
 
 @app.get("/")
@@ -26,6 +27,10 @@ async def root():
                 "departments": "/departments",
                 "jobs": "/jobs",
                 "employees": "/employees",
-                "all_tables": "/all-tables"
+                "all_tables": "/all-tables",
+                "metrics": {
+                    "hired_by_quarter_2021": "/metrics/hired-by-quarter-2021",
+                    "top_hiring_departments": "/metrics/top-hiring-departments"
+                }
             }
             }

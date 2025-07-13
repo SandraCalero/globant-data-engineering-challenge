@@ -25,7 +25,7 @@ async def batch_upsert_jobs(session: SessionDep):
 
 
 @router.get("/jobs", response_model=list[Job], tags=["jobs"])
-async def list_jobs(session: SessionDep, page: int = 1, limit: int = Query(10, le=100)):
+async def list_jobs(session: SessionDep, page: int = Query(1, ge=1), limit: int = Query(10, le=100)):
     offset = (page - 1) * limit
     statement = select(Job).order_by(
         Job.id).offset(offset).limit(limit)

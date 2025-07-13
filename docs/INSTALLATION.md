@@ -107,5 +107,6 @@ make test-dept    # Test departments batch endpoint
 make test-emp     # Test employees batch endpoint
 make test-jobs    # Test jobs batch endpoint
 make test-get     # Test GET endpoints
+make test-metrics # Test metrics endpoints
 make clean        # Clean containers
 ``` 

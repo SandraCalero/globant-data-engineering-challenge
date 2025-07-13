@@ -23,6 +23,10 @@ http://localhost:8000
 - `GET /jobs` - List all jobs (with pagination)
 - `GET /employees` - List all employees (with pagination)
 
+### Analytics & Metrics
+- `GET /metrics/hired-by-quarter-2021` - Number of employees hired for each position and department in 2021 divided by quarter
+- `GET /metrics/top-hiring-departments` - List of departments that hired more employees than the average in 2021
+
 ## Testing Examples
 
 ### Test batch endpoints
@@ -50,7 +54,10 @@ curl "http://localhost:8000/employees?page=1&limit=50"
 
 # Get jobs with pagination
 curl "http://localhost:8000/jobs?page=1&limit=100"
-```
+
+# Test metrics endpoints
+curl "http://localhost:8000/metrics/hired-by-quarter-2021?page=1&limit=5"
+curl "http://localhost:8000/metrics/top-hiring-departments?page=1&limit=10"
 
 ### Test health endpoints
 ```bash
@@ -93,6 +100,41 @@ curl "http://localhost:8000/health-s3"
 }
 ```
 
+### Hired by Quarter 2021 Response
+```json
+{
+  "page": 1,
+  "limit": 5,
+  "count": 5,
+  "data": [
+    {
+      "department": "Accounting",
+      "job": "Account Representative IV",
+      "Q1": 1,
+      "Q2": 0,
+      "Q3": 0,
+      "Q4": 0
+    }
+  ]
+}
+```
+
+### Top Hiring Departments Response
+```json
+{
+  "page": 1,
+  "limit": 10,
+  "count": 7,
+  "data": [
+    {
+      "id": 8,
+      "department": "Support",
+      "employees_hired": 217
+    }
+  ]
+}
+```
+
 ### Batch Processing Response
 ```json
 {
@@ -105,15 +147,6 @@ curl "http://localhost:8000/health-s3"
   "file_not_found": false
 }
 ```
-
-**Response Fields:**
-- `table` (str): Name of the processed table
-- `total` (int): Total number of rows processed
-- `inserted` (int): Number of new records inserted
-- `updated` (int): Number of existing records updated
-- `failed` (int): Number of rows that failed to process
-- `errors` (list): Array of error details for failed rows
-- `file_not_found` (bool): Whether the CSV file was found in S3
 
 ### Health Check Response
 ```json
@@ -162,4 +195,11 @@ curl "http://localhost:8000/health-s3"
 - **Performance Optimizations**: Efficient queries and memory management
 - **Scalable S3 Structure**: CSV files organized in folders by model class (Departments/, Jobs/, Employees/)
 - **Batch All Tables**: Process all CSV files simultaneously with single endpoint
-- **Pagination Support**: GET endpoints support pagination for better performance 
+- **Pagination Support**: GET endpoints support pagination for better performance
+
+## Analytics & Metrics Features
+
+- **Database Views**: Optimized SQL views for complex analytics queries
+- **SQLModel Integration**: Type-safe models for database views
+- **Pagination Support**: All metrics endpoints support pagination
+- **Consistent Response Format**: Standardized pagination metadata across all endpoints 

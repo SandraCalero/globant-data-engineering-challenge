@@ -74,6 +74,8 @@ erDiagram
 - **Pagination**: GET endpoints support pagination for better performance and user experience
 - **Batch All Tables**: Endpoint to process all CSV files simultaneously
 - **Scalable S3 Structure**: CSV files organized in folders by model class for better scalability
+- **Analytics & Metrics**: Database views and endpoints for data analytics
+- **SQLModel View Models**: Type-safe models for database views with pagination support
 
 ### 🔧 Available Endpoints
 
@@ -93,6 +95,10 @@ erDiagram
 - `GET /jobs` - List all jobs (with pagination)
 - `GET /employees` - List all employees (with pagination)
 
+#### Analytics & Metrics
+- `GET /metrics/hired-by-quarter-2021` - Number of employees hired for each position and department in 2021 divided by quarter
+- `GET /metrics/top-hiring-departments` - List of departments that hired more employees than the average in 2021
+
 ## 🛠️ Technologies Used
 
 - **FastAPI**: Web framework for APIs
@@ -104,6 +110,7 @@ erDiagram
 - **AWS ECR**: Container registry
 - **AWS ECS/Fargate**: Serverless container orchestration
 - **Alembic**: Database migration management
+- **sqlalchemy-views**: Database view creation and management
 
 ## 🚀 Quick Start
 
@@ -160,6 +167,10 @@ make test-batch
 # Test individual endpoints
 curl -X POST "http://localhost:8000/departments/batch"
 curl "http://localhost:8000/departments?page=1&size=10"
+
+# Test metrics endpoints
+curl "http://localhost:8000/metrics/hired-by-quarter-2021?page=1&limit=5"
+curl "http://localhost:8000/metrics/top-hiring-departments?page=1&limit=10"
 ```
 
 📚 See [API Documentation](docs/API.md) for complete testing examples.
@@ -176,6 +187,13 @@ curl "http://localhost:8000/departments?page=1&size=10"
 - **Batch All Tables**: Process all CSV files simultaneously with single endpoint
 - **Pagination Support**: GET endpoints support pagination for better performance
 
+## 📈 Analytics & Metrics Features
+
+- **Database Views**: Optimized SQL views for complex analytics queries
+- **SQLModel Integration**: Type-safe models for database views with pagination support
+- **Consistent Response Format**: Standardized pagination metadata across all endpoints
+- **sqlalchemy-views**: Elegant database view creation and management
+
 ## 🗄️ Database Migrations
 
 - **Alembic Integration**: Automated database schema management
@@ -187,8 +205,6 @@ curl "http://localhost:8000/departments?page=1&size=10"
 ## 📝 Next Steps
 
 - [ ] Add HTTP validations for request/response models
-- [ ] Implement metrics endpoints for data analytics
-- [ ] Add middleware for logging, authentication, and error handling
 - [ ] Add comprehensive unit tests
 - [ ] Add data validation rules and custom validators
 - [ ] Configure CI/CD pipeline

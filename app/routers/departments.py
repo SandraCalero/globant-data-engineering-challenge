@@ -25,7 +25,7 @@ async def batch_upsert_departments(session: SessionDep):
 
 
 @router.get("/departments", response_model=list[Department], tags=["departments"])
-async def list_departments(session: SessionDep, page: int = 1, limit: int = Query(10, le=100)):
+async def list_departments(session: SessionDep, page: int = Query(1, ge=1), limit: int = Query(10, le=100)):
     offset = (page - 1) * limit
     statement = select(Department).order_by(
         Department.id).offset(offset).limit(limit)
