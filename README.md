@@ -159,6 +159,12 @@ make test-batch   # Test all endpoints
 
 ## 🔍 Testing
 
+### Production API Docs
+
+You can try the API live in production here:
+
+👉 [Production API Swagger UI](http://globant-challenge-lb-769941458.us-east-1.elb.amazonaws.com/docs)
+
 Quick test commands:
 ```bash
 # Test all endpoints
@@ -204,10 +210,9 @@ curl "http://localhost:8000/metrics/top-hiring-departments?page=1&limit=10"
 
 ## 📝 Next Steps
 
-- [ ] Add HTTP validations for request/response models
-- [ ] Add comprehensive unit tests
-- [ ] Add data validation rules and custom validators
-- [ ] Configure CI/CD pipeline
+- [ ] Implement CI/CD pipeline
+- [ ] Optimize memory usage in the insertion process
+- [ ] Implement unittests
 
 ## 🤝 Contributing
 

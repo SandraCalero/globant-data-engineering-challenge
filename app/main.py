@@ -17,6 +17,10 @@ app.include_router(metrics.router)
 
 @app.get("/")
 async def root():
+    """
+    Root endpoint for the Globant Data Engineering API.
+    Returns API metadata and available endpoints.
+    """
     return {"message": "Globant Data Engineering API",
             "version": "1.0.0",
             "env": os.getenv("ENV"),

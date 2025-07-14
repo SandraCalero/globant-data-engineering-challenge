@@ -8,11 +8,6 @@ class DepartmentBase(SQLModel):
     department: str = Field(default=None)
 
 
-class DepartmentCreate(DepartmentBase):
-    """Model for creating a new department"""
-    pass
-
-
 class Department(DepartmentBase, table=True):
     """Model for Department entity"""
     employees: list["Employee"] = Relationship(back_populates="department")
@@ -22,11 +17,6 @@ class JobBase(SQLModel):
     """Base model for Job entity"""
     id: int | None = Field(default=None, primary_key=True)
     job: str = Field(default=None)
-
-
-class JobCreate(JobBase):
-    """Model for creating a new job"""
-    pass
 
 
 class Job(JobBase, table=True):
@@ -44,11 +34,6 @@ class EmployeeBase(SQLModel):
     job_id: int | None = Field(default=None, foreign_key="job.id")
 
 
-class EmployeeCrate(EmployeeBase):
-    """Model for creating a new employee"""
-    pass
-
-
 class Employee(EmployeeBase, table=True):
     """Model for Employee entity"""
     department: Department = Relationship(back_populates="employees")
@@ -56,26 +41,28 @@ class Employee(EmployeeBase, table=True):
 
 
 class HealthResponse(SQLModel):
+    """Model for health check database response."""
     status: str
     database_connected: bool
 
 
 class S3HealthResponse(SQLModel):
+    """Model for health check S3 response."""
     status: str
     s3_connected: bool
-    files_count: int | None = None
-    files: list[dict] | None = None
+    bucket_name: str | None = None
     error: str | None = None
 
 
 class BatchResponse(SQLModel):
-    table: str
+    """Model for batch processing response."""
+    table: str | None = None
     total: int
     inserted: int
     updated: int
     failed: int
     errors:  list[dict] = []
-    file_not_found: bool | None = None
+    processed_files: list[str] | None = None
 
 
 # View Models for Metrics
@@ -94,3 +81,11 @@ class VTopHiringDepartments(SQLModel, table=True):
     id: int = Field(primary_key=True)
     department: str = Field(default=None)
     employees_hired: int = Field(default=None)
+
+
+class MetricsResponse(SQLModel):
+    """Model for Metrics response"""
+    page: int = 1
+    limit: int = 10
+    count: int
+    data: list[dict]

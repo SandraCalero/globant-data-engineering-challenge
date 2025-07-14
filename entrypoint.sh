@@ -5,7 +5,7 @@ echo "Starting container..."
 
 # Wait for database to be ready
 echo "Waiting for database to be ready..."
-until pg_isready -h db -p 5432 -U "$POSTGRES_USER"; do
+until pg_isready -h "$DB_HOST" -p 5432 -U "$POSTGRES_USER"; do
   echo "Database not ready yet, waiting..."
   sleep 2
 done
