@@ -22,6 +22,7 @@ cp env.example .env
 # Edit .env with your configuration:
 # ENV=current_env
 # S3_BUCKET_NAME=your-s3-bucket-name
+# DB_HOST=db
 # DATABASE_URL=postgresql+psycopg2://myuser:mypassword@db:5432/mydatabase
 # POSTGRES_USER=myuser
 # POSTGRES_PASSWORD=mypassword
@@ -79,6 +80,7 @@ docker-compose -f docker-compose.yml -f docker-compose.local.yml exec fastapi al
 ```bash
 export ENV=current_env
 export S3_BUCKET_NAME=your-s3-bucket-name
+export DB_HOST=db
 export DATABASE_URL=postgresql+psycopg2://user:password@db:5432/database
 export POSTGRES_USER=myuser
 export POSTGRES_PASSWORD=mypassword
@@ -93,20 +95,26 @@ export LOG_LEVEL=INFO
 ## Makefile Commands
 
 ```bash
-make help         # View all commands
-make build        # Build Docker image
-make run          # Run application (development)
-make run-dev      # Run with visible logs
-make run-local    # Run locally without Docker
-make stop         # Stop application
-make logs         # View logs
-make test-s3      # Test S3 endpoint
-make test-db      # Test database endpoint
-make test-batch   # Test all batch endpoints
-make test-dept    # Test departments batch endpoint
-make test-emp     # Test employees batch endpoint
-make test-jobs    # Test jobs batch endpoint
-make test-get     # Test GET endpoints
-make test-metrics # Test metrics endpoints
-make clean        # Clean containers
+make help            # View all commands
+make build           # Build Docker image
+make run             # Run application with docker-compose (development)
+make run-dev         # Run application in development mode (with logs)
+make run-local       # Run application locally (without Docker)
+make stop            # Stop application
+make logs            # View application logs
+make test-db         # Test db endpoint
+make test-s3         # Test S3 endpoint
+make test-root       # Test root endpoint
+make test-batch      # Test all batch endpoints
+make test-all-tables # Test all tables batch endpoint
+make test-dept       # Test departments batch endpoint
+make test-emp        # Test employees batch endpoint
+make test-jobs       # Test jobs batch endpoint
+make test-get        # Test GET endpoints
+make test-metrics    # Test metrics endpoints
+make clean           # Clean containers and images
+make docker/build    # Build Docker image manually
+make docker/push     # Push image to ECR (requires AWS configuration)
+make docker/run      # Run Docker image manually
+make docker/test     # Legacy test command
 ``` 
